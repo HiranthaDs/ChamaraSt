@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.local
+.DS_Store
+.openai/.sites-state/
+*.tar.gz
+.npm-cache/
+qa/
