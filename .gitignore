@@ -1,6 +1,11 @@
 node_modules/
 dist/
 *.local
+.env
+backend/.env
+backend/.venv/
+__pycache__/
+*.py[cod]
 .DS_Store
 .openai/.sites-state/
 *.tar.gz

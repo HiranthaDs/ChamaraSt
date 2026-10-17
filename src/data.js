@@ -1,4 +1,4 @@
-export const departments = ['Engineering', 'Design', 'Marketing', 'Finance', 'People & Culture', 'Operations'];
+export const departments = ['Engineering', 'Design', 'Marketing', 'Finance', 'People & Culture', 'Operations', 'Manufacturing', 'Sales'];
 export const seedEmployees = [
   { id: 'EMP-001', name: 'Olivia Rhye', email: 'olivia@acme.co', role: 'Product Designer', department: 'Design', status: 'Active', employment: 'Full-time', salary: 5800, joined: '2024-02-12', color: 'peach' },
   { id: 'EMP-002', name: 'Phoenix Baker', email: 'phoenix@acme.co', role: 'Engineering Lead', department: 'Engineering', status: 'Active', employment: 'Full-time', salary: 8200, joined: '2023-06-05', color: 'purple' },
@@ -43,11 +43,13 @@ export const initialState = {
   activity: [{ id: 'a1', title: 'October invoices updated', detail: 'Finance · 15 Oct, 9:40 AM', kind: 'finance' }, { id: 'a2', title: 'Alex Morgan joined the team', detail: 'People & Culture · 1 Oct, 9:00 AM', kind: 'people' }, { id: 'a3', title: 'September payroll completed', detail: 'Payroll · 30 Sep, 4:30 PM', kind: 'payroll' }],
 };
 
-export const monthlyCashflow = [
-  { month: 'May', income: 58000, expenses: 42000 }, { month: 'Jun', income: 72000, expenses: 48000 },
-  { month: 'Jul', income: 63000, expenses: 44000 }, { month: 'Aug', income: 86000, expenses: 55000 },
-  { month: 'Sep', income: 78000, expenses: 51000 },
-];
+// Production starts empty. The legacy seed above remains available only to the
+// manufacturing workflow script; the application loads this database-first state.
+export const emptyState = {
+  employees: [], leaves: [], invoices: [], expenses: [], attendance: {}, payroll: null,
+  settings: { company: '', admin: '', email: '', weekStart: 'Monday' }, activity: [],
+};
+
 export const money = (n, compact = false) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: compact || Number.isInteger(n) ? 0 : 2, maximumFractionDigits: compact ? 1 : 2, ...(compact ? { notation: 'compact' } : {}) }).format(n);
 export const dateLabel = (s) => new Date(s + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 export const initials = (name = '') => name.split(' ').map(x => x[0]).slice(0, 2).join('');
