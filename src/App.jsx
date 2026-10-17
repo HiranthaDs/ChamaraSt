@@ -3,7 +3,7 @@ import { Activity, ArrowDownLeft, ArrowDownToLine, ArrowLeft, ArrowRight, ArrowU
 import { emptyState, departments, money, dateLabel, initials, sum, daysBetween, exportCsv } from './data';
 import Manufacturing, { manufacturingPages } from './manufacturing/Manufacturing';
 import { migrate, reconcilePayments, alerts as manufacturingAlerts, emptyManufacturing, ROLES, ROLE_HOME, ROLE_PAGES } from './manufacturing/store';
-import { fetchERPState, saveERPState } from './api';
+import { fetchERPState, saveERPState, waitForERPSaves } from './api';
 import { SalesmanDashboard, SalesOfficerDashboard } from './sales/SalesTracking';
 
 import GatePasses from './gate/GatePasses';
@@ -112,13 +112,17 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [manufacturingLaunch, setManufacturingLaunch] = useState(null);
   const storageWarned = useRef(false);
+  const pendingWorkspaceSave = useRef(null);
+  const workspaceSaveTimer = useRef(null);
+  useEffect(()=>{const flush=e=>{clearTimeout(workspaceSaveTimer.current);const pending=pendingWorkspaceSave.current;pendingWorkspaceSave.current=null;e.detail.promise=pending?pending():waitForERPSaves();};window.addEventListener('orbit:flush-workspace',flush);return()=>window.removeEventListener('orbit:flush-workspace',flush);},[]);
+  useEffect(() => { const refresh = async () => { try { const remote = await fetchERPState(); if(remote.state) { setData(current => ({...migrate(remote.state), manufacturing:{...migrate(remote.state).manufacturing, actor:current.manufacturing.actor}})); backendReady.current=true; setBackendStatus('Database connected'); } } catch { setToast('The workflow saved, but workspace refresh failed. Reload before editing stock.'); } }; window.addEventListener('orbit:workflow-state',refresh); return () => window.removeEventListener('orbit:workflow-state',refresh); }, []);
   useEffect(() => {
     let alive=true;
     (async()=>{try{const remote=await fetchERPState();if(!alive)return;if(remote.state)setData(migrate(remote.state));else await saveERPState(data);backendReady.current=true;setBackendStatus('Database connected');}catch{if(!alive)return;backendReady.current=false;setBackendStatus('Database unavailable');}})();
     return()=>{alive=false;};
   },[]);
   useEffect(() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch { if (!storageWarned.current) { setToast('Browser storage is unavailable. Changes will last for this session.'); storageWarned.current = true; } } }, [data]);
-  useEffect(()=>{if(!backendReady.current)return;const snapshot=data;const actor=activeDepartment==='sales'&&salesActor?{id:salesActor.employeeId,role:salesActor.role}:activeDepartment==='manufacturing'?{id:data.manufacturing.actor?.employeeId||'',role:data.manufacturing.actor?.role||'Manufacturing'}:activeDepartment==='hr'?{id:'',role:'HR Manager'}:activeDepartment==='finance'?{id:'',role:'Finance Officer'}:null;const timer=setTimeout(()=>{saveERPState(snapshot,actor).then(()=>setBackendStatus('Database connected')).catch(()=>{backendReady.current=false;setBackendStatus('Database unavailable');setToast('Database save failed. This change was not synced.');});},350);return()=>clearTimeout(timer);},[data,activeDepartment,salesActor]);
+  useEffect(()=>{if(!backendReady.current)return;const snapshot=data;const actor=activeDepartment==='sales'&&salesActor?{id:salesActor.employeeId,role:salesActor.role}:activeDepartment==='manufacturing'?{id:data.manufacturing.actor?.employeeId||'',role:data.manufacturing.actor?.role||'Manufacturing'}:activeDepartment==='hr'?{id:'',role:'HR Manager'}:activeDepartment==='finance'?{id:'',role:'Finance Officer'}:null;const save=()=>saveERPState(snapshot,actor).then(()=>setBackendStatus('Database connected')).catch(error=>{backendReady.current=false;setBackendStatus(error.status===409?'Refresh required':'Database unavailable');setToast(error.message||'Database save failed. Refresh before continuing; this change was not synced.');throw error;});pendingWorkspaceSave.current=save;const timer=setTimeout(()=>{pendingWorkspaceSave.current=null;save().catch(()=>{});},350);workspaceSaveTimer.current=timer;return()=>{clearTimeout(timer);pendingWorkspaceSave.current=null;};},[data,activeDepartment,salesActor]);
   useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(''), 4500); return () => clearTimeout(timer); }, [toast]);
   useEffect(() => { const shortcut = e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setModal({type:'search'}); } }; window.addEventListener('keydown',shortcut); return () => window.removeEventListener('keydown',shortcut); }, []);
   useEffect(() => { const handler = () => { const next = appPageFromHash(location.hash.slice(1)); if (activeDept && (activeDept.group===departmentByPage(next)?.group || next==='settings')) setPage(next); }; window.addEventListener('hashchange', handler); return () => window.removeEventListener('hashchange', handler); }, [activeDepartment]);

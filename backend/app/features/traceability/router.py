@@ -1,4 +1,5 @@
 from uuid import uuid4
+from psycopg.types.json import Jsonb
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 

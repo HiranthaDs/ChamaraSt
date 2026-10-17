@@ -24,7 +24,13 @@ class WorkspaceStateRepository:
                 if not row or not isinstance(row["saved"], dict):
                     raise ValueError("save_erp_state returned no database row")
                 return row["saved"]
-        except DatabaseUnavailable:
+        except DatabaseUnavailable as exc:
+            from fastapi import HTTPException
+            sqlstate = getattr(exc.__cause__, 'sqlstate', None)
+            if sqlstate == '40001':
+                raise HTTPException(409, 'Production or product records changed in another workflow. Refresh before saving.') from exc
+            if sqlstate == '42501':
+                raise HTTPException(409, 'Managed production orders and engineering products must be changed through their workflow controls. Refresh this workspace.') from exc
             raise
         except Exception as exc:
             raise DatabaseUnavailable("Could not save ERP data. Apply backend/schema.sql and verify DATABASE_URL.") from exc

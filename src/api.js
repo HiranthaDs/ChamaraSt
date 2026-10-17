@@ -10,16 +10,23 @@ async function request(path, options = {}) {
     headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
   });
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.detail || `Backend request failed (${response.status}).`);
+  if (!response.ok) {
+    const error = new Error(body.detail || `Backend request failed (${response.status}).`);
+    error.status = response.status;
+    throw error;
+  }
   return body;
 }
 
 export const fetchERPState = () => request('/api/state');
 let saveQueue = Promise.resolve();
+let latestSave = Promise.resolve();
+export const waitForERPSaves = () => latestSave;
 export const saveERPState = (state, actor = null) => {
   const snapshot = structuredClone(state);
   const headers = actor ? { 'X-Demo-Role': actor.role || '', 'X-Demo-Employee-Id': actor.id || '' } : {};
   const saving = saveQueue.catch(() => {}).then(() => request('/api/state', { method: 'PUT', headers, body: JSON.stringify({ state: snapshot }) }));
   saveQueue = saving.then(() => undefined, () => undefined);
+  latestSave = saving;
   return saving;
 };

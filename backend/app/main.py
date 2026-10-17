@@ -9,10 +9,13 @@ from backend.app.features.finance.router import router as finance_router
 from backend.app.features.health.router import router as health_router
 from backend.app.features.hr.router import router as hr_router
 from backend.app.features.manufacturing.router import router as manufacturing_router
+from backend.app.features.manufacturing.cutting_router import router as cutting_router
 from backend.app.features.sales_tracking.router import router as sales_tracking_router
 from backend.app.features.gate_passes.router import router as gate_passes_router
 from backend.app.features.workspace.router import router as workspace_router
 from backend.app.features.traceability.router import router as traceability_router
+from backend.app.features.production_jobs.router import router as production_jobs_router
+from backend.app.features.product_development.router import router as product_development_router
 
 app = FastAPI(title="Orbit ERP API", version="1.0.0", description="Feature-based HR, Finance, Manufacturing, and field-sales API")
 app.add_middleware(CORSMiddleware, allow_origins=list(settings.frontend_origins),
@@ -52,7 +55,10 @@ app.include_router(health_router)
 app.include_router(workspace_router)
 app.include_router(hr_router)
 app.include_router(finance_router)
+app.include_router(cutting_router)
 app.include_router(manufacturing_router)
 app.include_router(sales_tracking_router)
 app.include_router(gate_passes_router)
 app.include_router(traceability_router)
+app.include_router(production_jobs_router)
+app.include_router(product_development_router)
