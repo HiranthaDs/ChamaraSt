@@ -1,0 +1,25 @@
+{
+  "name": "orbit-erp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test:smoke": "node scripts/smoke.mjs",
+    "test:manufacturing": "node scripts/manufacturing-test.mjs",
+    "test:manufacturing:browser": "node scripts/manufacturing-browser.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "playwright-core": "^1.64.1",
+    "vite": "^6.0.5"
+  }
+}
