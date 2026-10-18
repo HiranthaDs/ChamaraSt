@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ArrowDownLeft, ArrowRight, ArrowUpRight, BriefcaseBusiness, CalendarDays, CheckCheck, Clock3, FileText, Receipt, TrendingUp, Users, Wallet } from 'lucide-react';
 import { initials, sum } from '../data';
 
-const palette = ['#214e45', '#b9f397', '#7da895', '#d9e5d6', '#94b990', '#e8ede6'];
+const palette = ['#c8261e', '#222222', '#e26760', '#737373', '#c4c4c4', '#f1b8b4'];
 const money = (value, currency) => new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(value);
 const localMonth = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 const displayDate = value => value ? new Date(`${value.slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date';

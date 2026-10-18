@@ -7,6 +7,29 @@ class Input(BaseModel):
 
 Priority = Literal['Low','Normal','High','Urgent']
 
+class JobCreate(Input):
+    request_id: str = Field(min_length=8, max_length=80)
+    purpose: Literal['stock', 'order'] = 'stock'
+    sales_order_id: str | None = None
+    product_id: str
+    quantity: int = Field(ge=1, le=500)
+    operator_id: str
+    machine_id: str
+    start: date
+    due: date
+    priority: Priority = 'Normal'
+    notes: str = Field(default='', max_length=4000)
+
+    @model_validator(mode='after')
+    def valid_plan(self):
+        if self.due < self.start:
+            raise ValueError('Due date cannot precede start.')
+        if self.purpose == 'order' and not self.sales_order_id:
+            raise ValueError('Choose a shop order for order production.')
+        if self.purpose == 'stock' and self.sales_order_id:
+            raise ValueError('Stock production cannot have a shop order link.')
+        return self
+
 class VersionInput(Input):
     version: int = Field(ge=1)
 

@@ -26,6 +26,43 @@ class JobService:
                 'machines':[{k:r.get(k) for k in ['id','name','status']} for r in m.get('machines',[])],
                 'sales_orders':[{k:r.get(k) for k in ['id','productId','quantity','status']} for r in m.get('orders',[])]}
 
+    def create(self, body):
+        role(self.actor, PLANNERS)
+        self.repo.lock()
+        state = self.repo.state()
+        m = state['manufacturing']
+        previous = next((j for j in m.get('jobs', []) if j.get('creationRequest') == body.request_id), None)
+        if previous:
+            require(previous.get('createdBy') == self.actor['id'], 'Request belongs to another employee.', 403)
+            return self.detail(previous['id'])
+        product = next((p for p in m.get('products', []) if p['id'] == body.product_id), None)
+        require(product and product.get('status') not in {'Development', 'Archived'}, 'Choose an approved production product.', 422)
+        require(product.get('bom') and product.get('quality'), 'Complete the product BOM and quality criteria first.', 422)
+        employee = self.repo.employee(body.operator_id)
+        require(employee.get('role') in {'Manufacturing Operator', 'Factory Manager'}, 'Assign a manufacturing operator.', 422)
+        machine = next((x for x in m.get('machines', []) if x['id'] == body.machine_id), None)
+        require(machine and machine.get('status') not in {'Maintenance', 'Unavailable'}, 'Choose an available production machine.', 422)
+        if body.purpose == 'order':
+            order = next((o for o in m.get('orders', []) if o['id'] == body.sales_order_id), None)
+            require(order and order.get('status') == 'Requested' and order['productId'] == body.product_id,
+                    'Choose an unallocated shop order for this product.', 422)
+            stock = sum(1 for g in m.get('goods', []) if g.get('productId') == body.product_id and g.get('status') == 'Available' and g.get('qc') == 'Pass' and g.get('bin') != 'QA-HOLD')
+            linked = sum(j['quantity'] for j in m.get('jobs', []) if j.get('salesOrderId') == order['id'] and j.get('status') not in {'Completed', 'Cancelled'})
+            receiving = sum(1 for g in m.get('goods', []) if g.get('productId') == body.product_id and g.get('status') == 'Receiving' and g.get('qc') == 'Pass' and any(j['id'] == g.get('jobId') and j.get('salesOrderId') == order['id'] for j in m.get('jobs', [])))
+            shortage = max(0, order['quantity'] - stock - linked - receiving)
+            require(body.quantity <= shortage, f'Only {shortage} additional units are needed now. Refresh stock and existing production before creating another order.')
+        job = dict(id=ident('MO'), productId=body.product_id, quantity=body.quantity,
+                   purpose=body.purpose, salesOrderId=body.sales_order_id, creationRequest=body.request_id,
+                   operator=body.operator_id, machine=body.machine_id, start=body.start.isoformat(), due=body.due.isoformat(),
+                   priority=body.priority, notes=body.notes, stage=0, status='Planned', materialsPosted=False,
+                   materialCost=0, laborCost=0, overhead=0, hours=0, history=[], createdBy=self.actor['id'],
+                   productSnapshot=copy.deepcopy(product), route=product.get('route') or STAGES)
+        m.setdefault('jobs', []).insert(0, job)
+        self.repo.save_state(state)
+        self.ensure(job)
+        self.repo.activity(self.actor, 'Production order created', job=job['id'], details={'purpose':body.purpose, 'sales_order_id':body.sales_order_id, 'quantity':body.quantity})
+        return self.detail(job['id'])
+
     def access(self, job_id, write=False):
         if write:
             self.repo.lock()
@@ -40,8 +77,8 @@ class JobService:
     def management(self, job):
         row = self.repo.one('select * from public.production_job_management where production_order_id=%s',(job['id'],))
         return row or {'production_order_id':job['id'],'status':'Backlog','version':1,'priority':job.get('priority','Normal'),
-                       'planned_start':job.get('start'),'due_date':job.get('due'),'supervisor_id':None,'dispatch_required':False,
-                       'sales_order_id':None,'approved_by':None,'reconciled_by':None,'specification':{}}
+                       'planned_start':job.get('start'),'due_date':job.get('due'),'supervisor_id':None,'dispatch_required':job.get('purpose')=='order',
+                       'sales_order_id':job.get('salesOrderId'),'approved_by':None,'reconciled_by':None,'specification':{}}
 
     def ensure(self, job):
         row = self.repo.one('select * from public.production_job_management where production_order_id=%s',(job['id'],))
@@ -50,9 +87,10 @@ class JobService:
         m = self.repo.state()['manufacturing']
         product = job.get('productSnapshot') or next((p for p in m.get('products',[]) if p['id']==job['productId']),{})
         return self.repo.insert('production_job_management',dict(production_order_id=job['id'],priority=job.get('priority','Normal'),
-            planned_start=job.get('start') or None,due_date=job.get('due') or None,specification={
+            planned_start=job.get('start') or None,due_date=job.get('due') or None,
+            dispatch_required=job.get('purpose')=='order',sales_order_id=job.get('salesOrderId'),specification={
                 'product_id':job['productId'],'revision':job.get('bomRevision') or product.get('revision'),
-                'bom':job.get('bom') or product.get('bom',[]),'route':job.get('route') or product.get('route') or STAGES,
+                'bom':product.get('bom',[]),'route':job.get('route') or product.get('route') or STAGES,
                 'quality':product.get('quality',''),'product_snapshot':product}))
 
     def check_version(self, row, version):
@@ -143,6 +181,12 @@ class JobService:
             delta=(new_start-old_start).days
             self.repo.db.execute("update public.production_job_tasks set planned_start=planned_start+%s,due_date=due_date+%s,version=version+1,updated_at=now() where production_order_id=%s and status not in ('COMPLETED','CANCELLED')",(delta,delta,job_id))
         self.repo.update('production_job_management','production_order_id',job_id,values)
+        state = self.repo.state()
+        canonical = next(j for j in state['manufacturing']['jobs'] if j['id'] == job_id)
+        canonical.update(salesOrderId=body.sales_order_id, purpose='order' if body.sales_order_id else 'stock',
+                         priority=body.priority, start=body.planned_start.isoformat() if body.planned_start else '',
+                         due=body.due_date.isoformat() if body.due_date else '')
+        self.repo.save_state(state)
         self.repo.activity(self.actor,'Job plan updated',job=job_id,details=body.model_dump(mode='json'))
         self.repo.notify(self.actor,body.supervisor_id,'Production plan assigned: '+job_id,'production_order',job_id)
         return self.detail(job_id)

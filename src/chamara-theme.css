@@ -1,0 +1,174 @@
+﻿/* Chamara Sticker: sampled from https://chamarasticker.lk/. Loaded last. */
+:root {
+  color-scheme: light;
+  --brand-red: #c8261e;
+  --brand-red-hover: #a51d17;
+  --brand-ink: #222;
+  --brand-black: #0c0305;
+  --brand-soft: #fcecea;
+  --forest: var(--brand-red);
+  --forest-deep: var(--brand-ink);
+  --lime: #f1b8b4;
+  --mint: #f4f4f4;
+  --green: var(--brand-red);
+  --dark: var(--brand-ink);
+  --muted: #686868;
+  --border: #e2e2e2;
+  --background: #f7f7f7;
+  --shadow: 0 3px 14px #00000006;
+  font-family: 'Roboto', Arial, sans-serif;
+  color: var(--brand-ink);
+  background: var(--background);
+}
+body, .app-shell { background: var(--background); }
+::selection { background: #f1b8b4; color: #222; }
+button:focus-visible, a:focus-visible, [tabindex='0']:focus-visible { outline: 3px solid #e55b52; outline-offset: 3px; }
+input:focus, select:focus, textarea:focus { border-color: var(--brand-red) !important; box-shadow: 0 0 0 3px #c8261e20 !important; }
+input[type='checkbox'], input[type='radio'], progress, meter { accent-color: var(--brand-red); }
+h1, h2, h3, .mf h1, .sf-page-head h1 { font-family: 'Source Sans Pro', Arial, sans-serif; }
+h1, .mf h1, .sf-page-head h1 { color: #222; font-weight: 700; letter-spacing: -.5px; }
+.eyebrow, .sf-eyebrow { color: #a51d17; font-weight: 700; letter-spacing: 1.4px; }
+
+/* The red masthead and black navigation, sized for an operational workspace. */
+.sidebar { background: var(--brand-black); color: #eee; border-right: 1px solid #2d2426; }
+.brand { width: 100%; min-height: 65px; padding: 16px 10px; margin-bottom: 23px; border-radius: 4px; background: #c8261e url('/brand/chamara-header.jpg') center / cover; }
+.brand .chamara-wordmark { display: block; width: 100%; height: auto; }
+.chamara-monogram { display: none; color: white; font: 700 22px 'Source Sans Pro', sans-serif; letter-spacing: -1px; }
+.workspace-switch { color: white; background: #211b1d; border-color: #43383a; border-radius: 5px; }
+.workspace-switch small { color: #bdb7b9; }
+.workspace-icon { background: #3b1d20; color: #ffb1a9; }
+.nav-label, .nav-group-toggle svg { color: #aba1a3; }
+.nav-item, .nav-group-manufacturing .nav-item { color: #d7d2d3; border-radius: 4px; }
+.nav-item:hover { color: white; background: #2b2023; }
+.nav-item.active { color: white; background: var(--brand-red); }
+.nav-item.active > svg { color: white; background: transparent; }
+.nav-item b { background: #413236; color: white; }
+.nav-item.active b { background: #941c17; }
+.active-dot { background: white; }
+.help-card { background: #25191c; border: 1px solid #493036; border-radius: 6px; }
+.help-card::after { border-color: #ffffff08; }
+.help-card p, .help-card button { color: #ddd1d4; }
+.help-spark { background: var(--brand-red); color: white; }
+.profile-button { border-color: #43383a; color: #ddd; }
+.profile-button strong { color: white; }
+.profile-button small { color: #bdb7b9; }
+.main-shell { border-radius: 0; }
+.topbar { background: #c8261e url('/brand/chamara-header.jpg') center / cover; border-bottom: 3px solid #a91c17; color: white; }
+.breadcrumb strong, .breadcrumb > span, .breadcrumb > svg, .topbar .icon-button { color: white; }
+.topbar .icon-button:hover { background: #ffffff20; }
+.topbar .global-search-button { background: #ffffff17; color: white; border-radius: 4px; }
+.topbar .notification-button { background: #970e1d40; }
+.topbar .demo-pill { color: white; background: #00000015; border-color: #ffffff40; }
+.topbar .avatar-button .avatar { background: #fff; color: #a51d17; border-color: #ffffff80; }
+.topbar-divider { background: #ffffff40; }
+
+/* Shared controls, forms and tables. Status colors stay semantic. */
+.button, .mf .button, .sf-small-button { background: white; color: #333; border-color: #d6d6d6; border-radius: 4px; }
+.button:hover, .mf .button:hover, .sf-small-button:hover { background: #f4f4f4; border-color: #bdbdbd; }
+.button.primary, .mf .button.primary, .sf-primary:not(.live), .sf-small-primary, .gate-submit, .sf-call-link, .beginner-next { background: var(--brand-red); border-color: var(--brand-red); color: white; border-radius: 4px; }
+.button.primary:hover, .mf .button.primary:hover, .sf-primary:not(.live):hover, .sf-small-primary:hover, .gate-submit:hover, .sf-call-link:hover, .beginner-next:hover { background: var(--brand-red-hover); border-color: var(--brand-red-hover); color: white; }
+.text-button, .table-link, .mf .text-button { color: #b62018; }
+.text-button:hover, .icon-button:hover { color: #941c17; }
+.tabs button.selected, .mf-tabs button.selected, .sf-profile-tabs button.active { background: transparent; color: #b62018; border-bottom-color: var(--brand-red); }
+.tabs button.selected::after { background: var(--brand-red); }
+.field input, .field select, .field textarea, .gp input, .gp select, .gp textarea, .wf-modal input, .wf-modal textarea, .wf-modal select { border-color: #d6d6d6; border-radius: 4px; color: #333; }
+.field, .modal-body .field, .mf-dialog .field, .sf-assign-form label, .sf-visit-form label { color: #595959; }
+.panel, .metric, .sf-card, .sf-salesman-directory, .sf-assign-details, .sf-profile-head, .sf-salesman-profile .sf-card, .mf-panel, .cut-panel { border-color: var(--border); border-radius: 6px; box-shadow: var(--shadow); }
+.panel-heading h2, .sf-card > header h2, .sf-salesman-directory-head h2, .metric-value, .mf-panel h2, .modal-header h2 { color: #222; }
+.search-field, .global-search-button, .wf-search { background: #fff; border-color: var(--border); border-radius: 4px; }
+th, .table-wrap th, .wf-panel-body th { background: #f2f2f2; color: #555; font-weight: 600; }
+td { color: #444; border-color: #ebebeb; }
+tr:hover td { background: #fff8f7; }
+.modal, .wf-modal { border-radius: 8px; }
+.modal-header { border-top: 4px solid var(--brand-red); }
+
+/* Dashboards and charts: red, black and silver. */
+.dashboard-stat, .sf-stat, .mf-metric { border-radius: 6px; }
+.dashboard-stat:hover { background: #fff8f7; border-color: #e3a9a4; }
+.dashboard-stat.featured, .metrics-grid > .metric:first-child, .metric.accent, .mf-metric:first-child, .payroll-hero, .bank-card { background: #222; border-color: #222; }
+.dashboard-stat.featured:hover { background: #333; }
+.dashboard-stat.featured .dashboard-stat-label, .dashboard-stat.featured small, .metrics-grid > .metric:first-child :is(.metric-top,.metric-bottom), .metric.accent :is(.metric-top,.metric-bottom,.payroll-note), .mf-metric:first-child > span, .mf-metric:first-child > small { color: #ddd; }
+.dashboard-stat-icon, .metric-icon, .summary-icon, .mf-square { color: var(--brand-red); background: var(--brand-soft); border-radius: 5px; }
+.dashboard-stat.featured .dashboard-stat-icon { color: white; background: var(--brand-red); }
+.dashboard-stat.featured .dashboard-stat-top { color: #ffaaa3; }
+.dashboard-quick-links { background: #fff; border-color: var(--border); border-radius: 6px; }
+.dashboard-quick-links button { border-color: var(--border); color: #333; }
+.dashboard-quick-links button > span { color: var(--brand-red); }
+.dashboard-quick-links button:hover { background: var(--brand-soft); border-radius: 4px; }
+.bar.income, .bar.revenue, .dashboard-chart-income { background: var(--brand-red); }
+.bar.expense, .bar.expenses, .dashboard-chart-expense { background: #333; }
+.dashboard-chart-key > span:last-child i, .dashboard-chart-bar.expenses { background: #333; }
+.dashboard-bar-pair > span:last-of-type { background: #333; }
+.dashboard-blank > span, .dashboard-request-icon { background: var(--brand-soft); color: var(--brand-red); }
+
+/* Manufacturing, proposals, cutting, warehouse, sales and gate passes. */
+.mf { --mf-ink: #333; --mf-muted: #707070; --mf-line: #e2e2e2; }
+.mf-context strong, .mf-metric > strong, .mf-stat-strip strong { color: #222; }
+.mf-metric:first-child > strong { color: white; }
+.mf-demo, .mf-operating-banner, .mf-bottom-line, .mf-form-note, .wf-form-note, .wf-bom-editor, .wf-callout, .gp-notice, .sf-privacy, .sf-device-card, .sf-job-banner { background: #f5f5f5; border-color: #e2e2e2; color: #606060; border-radius: 5px; }
+.mf-role-task { background: #222; border-left: 4px solid var(--brand-red); border-radius: 5px; }
+.mf-role-task small { color: #ddd; }
+.mf-pipeline-icon.focus { background: var(--brand-soft); border-color: #e6aaa5; color: var(--brand-red); }
+.mf-floor-map { background-color: #f7f7f7; }
+.mf-kanban-col, .wf-column { background: #f0f0f0; border-color: #e2e2e2; border-radius: 6px; }
+.wf-workspace { --wf-forest: #222; --wf-lime: #f1b8b4; --wf-border: #e2e2e2; color: #333; }
+.wf-card { color: #333; border-radius: 5px; }
+.wf-view-switch { background: #eee; border-radius: 5px; }
+.wf-view-switch button.active { color: #b62018; }
+.wf-progress > span, .wf-column-dot { background: var(--brand-red); }
+.wf-column-dot.blocked { background: #c28a21; }
+.wf-gantt-track button { background: #efb3ae; color: #5e1712; }
+.wf-gantt-track button.late { background: #f2d5b0; color: #704b1c; }
+.cut-comparison button.selected { border-color: var(--brand-red); background: #fff7f6; }
+.cut-title-actions .button:first-child { background: var(--brand-red); border-color: var(--brand-red); color: white; }
+.gp-tabs { background: #f1f1f1; border-radius: 5px; }
+.gp-tabs .active, .gp-tabs .active:hover { background: var(--brand-red); color: white; border-radius: 4px; }
+.gp-tabs button:hover { background: #e5e5e5; }
+.sf-profile-avatar { background: var(--brand-soft); color: #b62018; }
+.sf-profile-tabs button { color: #626262; }
+.sf-salesman-bar:hover, .sf-job-row:hover { background: #fff8f7; }
+
+/* Department selection and sign-in share the website masthead. */
+.department-gate { background: #f5f5f5; }
+.department-gate > header { background: #c8261e url('/brand/chamara-header.jpg') left center / cover; border-top: 7px solid #c10000; border-bottom: 1px solid #a51d17; }
+.gate-brand { display: flex; align-items: center; width: min(360px,45vw); }
+.gate-brand img { display: block; width: 100%; height: auto; }
+.department-gate > header > span { color: white; }
+.department-picker h1, .department-login h1 { color: #222; }
+.department-card { border-radius: 6px; border-color: #ddd; border-top: 3px solid var(--brand-red); box-shadow: 0 4px 18px #00000005; }
+.department-card:hover { border-color: var(--brand-red); background: white; }
+.department-card > span, .login-dept-icon { color: var(--brand-red); background: var(--brand-soft); border-radius: 5px; }
+.department-card > strong { color: #222; }
+.department-card > p, .department-picker > p, .department-login > p { color: #626262; }
+.department-card > i, .gate-back { color: #b62018; }
+.demo-credentials { background: white; color: #666; border-color: #ddd; border-radius: 5px; }
+.demo-credentials strong, .demo-credentials b { color: #444; }
+
+/* Beginner guidance stays legible on dark and light surfaces. */
+.beginner-card { color: #222; border-color: #ddd; border-top: 4px solid var(--brand-red); border-radius: 8px; box-shadow: 0 20px 70px #00000050; }
+.beginner-card p { color: #555; }
+.beginner-card header, .beginner-action-tip { color: #626262; }
+.beginner-progress { background: #eee; }
+.beginner-progress i { background: var(--brand-red); }
+.beginner-secondary { color: #444; }
+.beginner-next { border-color: var(--brand-red) !important; }
+.beginner-launch { color: #b62018; background: #fff; border-color: #e7b5b0; border-radius: 4px; }
+.beginner-launch:hover { background: #fff1ef; border-color: var(--brand-red); }
+.department-gate > header .beginner-launch { color: white; background: #00000015; border-color: #ffffff65; }
+.department-gate > header .beginner-launch:hover { background: #00000030; }
+
+@media (min-width: 761px) {
+  .sidebar-collapsed .brand { min-height: 48px; padding: 10px; justify-content: center; }
+  .sidebar-collapsed .brand .chamara-wordmark { display: none; }
+  .sidebar-collapsed .chamara-monogram { display: inline; }
+}
+@media (max-width: 760px) {
+  .topbar { padding: 0 12px; gap: 8px; }
+  .topbar .breadcrumb { min-width: 0; flex: 1; overflow: hidden; }
+  .topbar .breadcrumb strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar-actions { flex-shrink: 0; gap: 6px; }
+  .department-gate > header { gap: 12px; }
+  .department-gate > header > span { display: none; }
+  .gate-brand { width: min(260px,48vw); flex-shrink: 0; }
+  .department-gate > header .beginner-launch { font-size: 10px; padding: 7px; }
+}

@@ -3,7 +3,7 @@ import { optimize } from './nesting.js';
 export const STAGES = ['Bending', 'Welding', 'Grinding', 'Painting', 'Assembly', 'Quality inspection', 'Packaging'];
 export const ROLES = ['Factory Manager', 'Production Planner', 'Cutting Operator', 'Manufacturing Operator', 'Supervisor', 'Quality Inspector', 'Inventory Officer', 'Warehouse Manager', 'Procurement Officer', 'Sales Officer', 'Finance Officer', 'HR Manager'];
 export const ROLE_HOME = {
-  'Factory Manager':'factory', 'Production Planner':'production', 'Cutting Operator':'cutting',
+  'Factory Manager':'workflow-desk', 'Production Planner':'workflow-desk', 'Cutting Operator':'cutting',
   'Manufacturing Operator':'production', 'Supervisor':'quality', 'Quality Inspector':'quality',
   'Inventory Officer':'materials', 'Warehouse Manager':'warehouse', 'Procurement Officer':'materials',
   'Sales Officer':'distribution', 'Finance Officer':'manufacturing-reports', 'HR Manager':'production',
@@ -23,7 +23,7 @@ export const ROLE_PAGES = {
   'HR Manager':['factory','production'],
 };
 // New workflow workspaces validate the selected HR identity on the server.
-Object.values(ROLE_PAGES).forEach(pages => pages.push('production-jobs', 'product-proposals'));
+Object.values(ROLE_PAGES).forEach(pages => pages.push('workflow-desk', 'production-jobs', 'product-proposals'));
 export const roleEmployee = { 'Factory Manager':'EMP-008', 'Production Planner':'EMP-008', 'Cutting Operator':'EMP-005', 'Manufacturing Operator':'EMP-005', Supervisor:'EMP-002', 'Quality Inspector':'EMP-011', 'Inventory Officer':'EMP-009', 'Warehouse Manager':'EMP-007', 'Procurement Officer':'EMP-006', 'Sales Officer':'EMP-010', 'Finance Officer':'EMP-006', 'HR Manager':'EMP-003' };
 export const lkr = (cents, compact = false) => new Intl.NumberFormat('en-LK', { style:'currency', currency:'LKR', maximumFractionDigits:compact?1:2, minimumFractionDigits:compact?0:2, ...(compact?{notation:'compact'}:{}) }).format(cents/100);
 export const qty = (material, amount) => `${material.unit === 'ml' ? (amount/1000).toLocaleString() : amount.toLocaleString()} ${material.unit === 'ml' ? 'L' : material.unit}`;

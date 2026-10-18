@@ -9,7 +9,8 @@
     "preview": "vite preview --host 127.0.0.1",
     "test:smoke": "node scripts/smoke.mjs",
     "test:manufacturing": "node scripts/manufacturing-test.mjs",
-    "test:manufacturing:browser": "node scripts/manufacturing-browser.mjs"
+    "test:manufacturing:browser": "node scripts/manufacturing-browser.mjs",
+    "demo:manufacturing": "node scripts/manufacturing-demo.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

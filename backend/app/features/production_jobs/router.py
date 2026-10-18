@@ -2,7 +2,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, Header, Response
 from backend.app.core.config import settings
 from backend.app.db.postgres import get_connection
-from .models import JobPlan, Action, TaskInput, TaskEdit, TaskAction, BlockerInput, Note, DocumentInput, WorkflowConfig, ManufacturingAction
+from .models import JobCreate, JobPlan, Action, TaskInput, TaskEdit, TaskAction, BlockerInput, Note, DocumentInput, WorkflowConfig, ManufacturingAction
 from .repository import WorkflowRepository
 from .service import JobService
 from .policy import READERS, require
@@ -31,6 +31,8 @@ def analytics(svc=Depends(service)): return svc.analytics()
 def manufacturing_action(body:ManufacturingAction,svc=Depends(service)): return svc.manufacture(body)
 @router.get('')
 def jobs(svc=Depends(service)): return svc.list()
+@router.post('',status_code=201)
+def create_job(body:JobCreate,svc=Depends(service)): return svc.create(body)
 @router.get('/{job_id}')
 def detail(job_id:str,svc=Depends(service)): return svc.detail(job_id)
 @router.put('/{job_id}/plan')

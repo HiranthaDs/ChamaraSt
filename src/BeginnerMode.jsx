@@ -287,7 +287,7 @@ const course = [
   ['Open Invoices','Find the new LKR invoice in the Finance invoice register.','nav:Invoices'],
   ['Show LKR invoices','Choose LKR so the manufacturing invoice appears.','field:Invoice currency'],
   ['Open the new customer invoice','Open the newest manufacturing invoice and review the shop, amount and due date.','first:.table-wrap tbody tr .table-link'],
-  ['Record the customer payment','Only click this after the customer actually pays. This records paid status in Orbit; it does not contact a bank.','button:Record payment'],
+  ['Record the customer payment','Only click this after the customer actually pays. This records paid status in the ERP; it does not contact a bank.','button:Record payment'],
   ['Switch to Supervisor for machine setup','A Supervisor can register a factory machine.','select:Manufacturing role'],
   ['Choose the machine-register Supervisor','Select an active Supervisor.','select:Manufacturing employee'],
   ['Open Production','Go to the machine register.','nav:Production'],
@@ -316,6 +316,54 @@ const forContext = context => context === 'manufacturing' ? course.slice(4) : co
   ...course.slice(4),
 ] : course;
 
+const deskStep = ['Open the workflow desk','The workflow desk connects production, stock and shop fulfilment.','nav:Workflow desk'];
+const identitySteps = [
+  ['Choose the planner role','Select Production Planner or Factory Manager to create production.','select:Manufacturing role'],
+  ['Choose the responsible employee','Select an active employee whose HR role matches.','select:Manufacturing employee'],
+];
+const plannerSteps = [
+  ['Start guided production planning','Click Plan production. This opens a four-step planner.','button:Plan production'],
+  ['Choose the production purpose','Choose Make for warehouse stock to replenish stock. Choose Make for a shop order only for an existing request.','field:Production purpose'],
+  ['Choose the production product','Select an approved product with a BOM and quality criteria. For shop production the product comes from the request.','field:Production product'],
+  ['Enter the batch quantity','Enter a whole number from 1 to 500. Shop production cannot exceed the uncovered shortage.','field:Production quantity'],
+  ['Continue to materials','Click Continue to check this batch against available material stock.','button:Continue'],
+  ['Review material requirements','Check required, available and shortage quantities. You can plan with a shortage, but cannot reserve or start until it is resolved.','first:.journey-wizard table'],
+  ['Continue to assignments','Click Continue after checking material requirements.','button:Continue'],
+  ['Assign the production operator','Choose the actual active operator. HR attendance and certification must be valid when work starts.','field:Assigned operator'],
+  ['Assign a production machine','Choose the real machine used for this work. Register missing equipment under Production ? Factory floor.','field:Production machine'],
+  ['Set the planned start','Enter the planned production start date.','field:Planned start'],
+  ['Set the delivery deadline','Required by must be on or after the planned start.','field:Required by'],
+  ['Enter work instructions','Enter the drawing reference, process instructions and other actual production requirements.','field:Work instructions'],
+  ['Review the production plan','Click Continue and review product, quantity, purpose, employee, machine and dates.','button:Continue'],
+  ['Create the production order','Save once. The server checks stock again and protects against duplicate submissions.','button:Create production order'],
+  ['Return to the workflow desk','Your new job now has a next action and responsible role.','nav:Workflow desk'],
+  ['Show all production','Find the newly created job by its ID.','tab:All production'],
+  ['Reserve materials','Open Check and reserve materials for your job. Resolve shortages first; Inventory Officer or Production Planner reserves the BOM.','button:Check and reserve materials'],
+  ['Confirm the material reservation','Click Reserve materials only when stock is available.','button:Reserve materials'],
+  ['Close production details','Close this dialog to open the release record.','aria:Close dialog'],
+  ['Open the release record','Open Job record & documents on your batch.','button:Job record & documents'],
+  ['Submit production for release','Click Change stage.','button:Change stage'],
+  ['Choose Pending Approval','Select Pending Approval. A different Supervisor or Factory Manager then approves Ready for Production.','field:Target stage'],
+  ['Record the handoff reason','Explain that the specification, materials and assignments have been checked.','field:Reason / handoff notes'],
+  ['Save the release request','Save, then hand the job to an independent Supervisor or Factory Manager.','button:Save'],
+  ['Switch to the release reviewer','Choose Supervisor or Factory Manager for independent review.','select:Manufacturing role'],
+  ['Choose an independent employee','The reviewer must differ from the production creator.','select:Manufacturing employee'],
+  ['Approve release','Open Change stage again.','button:Change stage'],
+  ['Choose Ready for Production','Select Ready for Production after checking the reserved materials and assignments.','field:Target stage'],
+  ['Record release evidence','Describe the checks performed.','field:Reason / handoff notes'],
+  ['Save the independent release','Click Save. Use the Execute production guide next to perform and review each real operation.','button:Save'],
+];
+const taskGuides = {
+  stock: {title:'Plan production for stock',description:'Guided batch setup, material check and independent release.',steps:[...identitySteps,deskStep,...plannerSteps]},
+  order: {title:'Plan a shop-order shortage',description:'Check finished stock and existing production before making more.',steps:[...identitySteps,deskStep,['Open shop fulfilment','Choose Shop fulfilment to see available stock, linked production and uncovered shortages.','tab:Shop fulfilment'],['Plan the remaining shortage','Click Produce shortage for the required shop request. If stock already covers it, a Warehouse Manager can Allocate stock instead.','button:Produce shortage'],...plannerSteps.slice(2)]},
+  execute: {title:'Execute production and receive stock',description:'Operator ? independent supervisor ? QC ? packaging ? warehouse.',steps:course.slice(160,204)},
+  materials: {title:'Receive material and cut components',description:'Physical sheet receipt, cutting approval and verified output.',steps:course.slice(4,75)},
+  product: {title:'Define and approve a product',description:'Specification, BOM, cost estimate and independent approval.',steps:course.slice(75,146)},
+  sales: {title:'Sell and deliver warehouse stock',description:'Shop request, allocation, picking, packing, delivery and invoice.',steps:[['Select Sales Officer','Select Sales Officer to create a shop request.','select:Manufacturing role'],['Choose the sales employee','Select an active Sales Officer.','select:Manufacturing employee'],['Open sales and distribution','Create the shop request before allocating goods.','nav:Sales & distribution'],...course.slice(257,270),['Arrange outward authorization','Before physical dispatch, complete the Gate passes guide when required. Return here with the shipment authorized.','nav:Gate passes'],...course.slice(270,285)]},
+  gates: {title:'Authorize and verify an outward gate pass',description:'Prepare after picking/packing, before physical dispatch.',steps:course.slice(204,252)},
+  machine: {title:'Register a cutting machine',description:'Record the physical asset and its true operating capacity.',steps:course.slice(285,296)},
+};
+
 function normalized(value) { return String(value || '').replace(/\s+/g, ' ').trim().toLowerCase(); }
 function findTarget(spec) {
   if (!spec) return null;
@@ -336,24 +384,28 @@ function findTarget(spec) {
 
 export default function BeginnerMode({ active, index, context, onNext, onPrevious, onJump, onClose }) {
   const [rect,setRect]=useState(null);
-  const steps=useMemo(()=>forContext(context),[context]);
+  const [task,setTask]=useState(null);
+  useEffect(()=>{if(!active)setTask(null);},[active]);
+  const steps=useMemo(()=>taskGuides[task]?.steps||forContext(context),[context,task]);
   const step=steps[index];
   const jumpTo=title=>{const next=steps.findIndex(item=>item[0]===title);if(next>=0)onJump(next);};
   const machineNeedsSetup=step?.[0]==='Select the cutting machine'&&(()=>{const field=findTarget(step[2]);const options=[...(field?.querySelectorAll('option')||[])].slice(1);return !options.some(o=>/\b(idle|available)\b/i.test(o.textContent));})();
   const courseFinished=step?.[0]==='Record the customer payment';
   const cardAtTop=!!rect&&rect.y>window.innerHeight*.56;
   useEffect(()=>{
-    if(!active)return;
+    if(!active||!task)return;
     let frame=0;
     const measure=(scroll=false)=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{const el=findTarget(step?.[2]);if(!el){setRect(null);return;}if(scroll)el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});const r=el.getBoundingClientRect();setRect({x:r.left-5,y:r.top-5,w:r.width+10,h:r.height+10});});};
     measure(true);const observer=new MutationObserver(records=>{if(records.some(m=>!(m.target.closest?.('.beginner-layer')||m.target.parentElement?.closest('.beginner-layer'))))measure();});observer.observe(document.body,{subtree:true,childList:true,attributes:true});
     const onResize=()=>measure();const onScroll=()=>measure();window.addEventListener('resize',onResize);window.addEventListener('scroll',onScroll,true);
     return()=>{cancelAnimationFrame(frame);observer.disconnect();window.removeEventListener('resize',onResize);window.removeEventListener('scroll',onScroll,true);};
-  },[active,index,step]);
-  const arrow=useMemo(()=>{if(!rect)return '';const tx=window.innerWidth/2,ty=cardAtTop?112:window.innerHeight-200;const sx=rect.x+rect.w/2,sy=rect.y+rect.h/2;return `M ${sx} ${sy} Q ${(sx+tx)/2} ${(sy+ty)/2-30} ${tx} ${ty}`;},[rect,cardAtTop]);
-  if(!active||!step)return null;
+  },[active,index,step,task]);
+  const arrow=useMemo(()=>{if(!rect)return '';const tx=window.innerWidth/2,ty=cardAtTop?112:window.innerHeight-200;const sx=rect.x+rect.w/2,sy=rect.y+rect.h/2;return `M ${tx} ${ty} Q ${(sx+tx)/2} ${(sy+ty)/2-30} ${sx} ${sy}`;},[rect,cardAtTop]);
+  if(!active)return null;
+  if(!task)return <div className="beginner-layer"><div className="beginner-menu-backdrop"/><section className="beginner-card beginner-menu"><header><span><BookOpen size={16}/> BEGINNER MODE ? CHOOSE A TASK</span><button aria-label="Exit beginner mode" onClick={onClose}><X size={18}/></button></header><h2>What are you doing now?</h2><p>Each guide highlights the actual controls. Work is saved only when you perform the action; the guide does not approve or complete work for you.</p>{context!=='manufacturing'&&<p>Enter the Manufacturing department first, then choose a task here.</p>}<div className="beginner-task-list">{Object.entries(taskGuides).map(([key,guide])=><button key={key} onClick={()=>{setTask(key);onJump(0);}}><strong>{guide.title}</strong><small>{guide.description}</small></button>)}</div><button className="beginner-secondary" onClick={()=>{setTask('reference');onJump(0);}}>Full reference guide</button></section></div>;
+  if(!step)return null;
   return <div className="beginner-layer" role="region" aria-label="Beginner mode guide">
-    <svg className="beginner-shade" aria-hidden="true"><defs><mask id="beginner-hole" maskUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%"><rect width="100%" height="100%" fill="white"/>{rect&&<rect x={rect.x} y={rect.y} width={rect.w} height={rect.h} rx="10" fill="black"/>}</mask><marker id="beginner-arrow-head" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#c4f05a"/></marker></defs><rect width="100%" height="100%" fill="rgba(13,31,27,.62)" mask="url(#beginner-hole)"/>{rect&&<><rect x={rect.x} y={rect.y} width={rect.w} height={rect.h} rx="10" fill="none" stroke="#c4f05a" strokeWidth="4"/><path d={arrow} fill="none" stroke="#c4f05a" strokeWidth="3" markerEnd="url(#beginner-arrow-head)"/></>}</svg>
-    <section className={`beginner-card ${cardAtTop?'at-top':''}`}><header><span><BookOpen size={16}/> BEGINNER MODE · STEP {index+1} OF {steps.length}</span><button aria-label="Exit beginner mode" onClick={onClose}><X size={18}/></button></header><div className="beginner-progress"><i style={{width:`${((index+1)/steps.length)*100}%`}}/></div><h2>{step[0]}</h2><p>{step[1]}</p><small className="beginner-action-tip">Click the glowing control, complete the action, wait for it to finish, then choose Next step.</small>{!rect&&<small className="beginner-target-note">The highlighted control is not visible yet. Finish the previous action or open the indicated page; the guide will find it automatically.</small>}{machineNeedsSetup&&<small className="beginner-target-note">No compatible Idle or Available cutter is registered. You can use the optional machine setup branch below, then return here.</small>}<footer><button className="beginner-secondary" onClick={onPrevious} disabled={index===0}><ArrowLeft size={15}/> Back</button>{machineNeedsSetup&&<button className="beginner-secondary" onClick={()=>jumpTo('Switch to Supervisor for machine setup')}>Register a cutter</button>}{step[0]==='Choose the registered cutter'&&<button className="beginner-secondary" onClick={()=>jumpTo('Enter machine kerf')}>Return to cutting setup</button>}{step[0]==='Complete warehouse verification if requested'&&!rect&&<button className="beginner-secondary" onClick={()=>jumpTo('Switch to Warehouse Manager for gate verification')}>Switch to warehouse role</button>}{step[0]==='Verify the warehouse items'&&<button className="beginner-secondary" onClick={()=>jumpTo('Complete each pass approval')}>Continue gate approvals</button>}{step[0]==='Approve the gate pass'&&<button className="beginner-secondary" onClick={()=>jumpTo('Complete each pass approval')}>Next approval</button>}{step[0]==='Continue with the next stage'&&<button className="beginner-secondary" onClick={()=>jumpTo('Open the order for the current stage')}>Repeat stage</button>}<button className="beginner-next" onClick={courseFinished||index===steps.length-1?onClose:onNext}>{courseFinished||index===steps.length-1?'Finish':'Next step'}<ArrowRight size={15}/></button></footer></section>
+    <svg className="beginner-shade" aria-hidden="true"><defs><mask id="beginner-hole" maskUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%"><rect width="100%" height="100%" fill="white"/>{rect&&<rect x={rect.x} y={rect.y} width={rect.w} height={rect.h} rx="10" fill="black"/>}</mask><marker id="beginner-arrow-head" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ff6a5f"/></marker></defs><rect width="100%" height="100%" fill="rgba(12,3,5,.66)" mask="url(#beginner-hole)"/>{rect&&<><rect x={rect.x} y={rect.y} width={rect.w} height={rect.h} rx="10" fill="none" stroke="#ff6a5f" strokeWidth="4"/><path d={arrow} fill="none" stroke="#ff6a5f" strokeWidth="3" markerEnd="url(#beginner-arrow-head)"/></>}</svg>
+    <section className={`beginner-card ${cardAtTop?'at-top':''}`}><header><span><BookOpen size={16}/> BEGINNER MODE · STEP {index+1} OF {steps.length}</span><button aria-label="Exit beginner mode" onClick={onClose}><X size={18}/></button></header><div className="beginner-progress"><i style={{width:`${((index+1)/steps.length)*100}%`}}/></div><button className="beginner-secondary" onClick={()=>{setTask(null);onJump(0);}}>Choose another task</button><h2>{step[0]}</h2><p>{step[1]}</p><small className="beginner-action-tip">Click the glowing control, complete the action, wait for it to finish, then choose Next step.</small>{!rect&&<small className="beginner-target-note">The highlighted control is not visible yet. Finish the previous action or open the indicated page; the guide will find it automatically.</small>}{machineNeedsSetup&&<small className="beginner-target-note">No compatible Idle or Available cutter is registered. You can use the optional machine setup branch below, then return here.</small>}<footer><button className="beginner-secondary" onClick={onPrevious} disabled={index===0}><ArrowLeft size={15}/> Back</button>{machineNeedsSetup&&<button className="beginner-secondary" onClick={()=>jumpTo('Switch to Supervisor for machine setup')}>Register a cutter</button>}{step[0]==='Choose the registered cutter'&&<button className="beginner-secondary" onClick={()=>jumpTo('Enter machine kerf')}>Return to cutting setup</button>}{step[0]==='Complete warehouse verification if requested'&&!rect&&<button className="beginner-secondary" onClick={()=>jumpTo('Switch to Warehouse Manager for gate verification')}>Switch to warehouse role</button>}{step[0]==='Verify the warehouse items'&&<button className="beginner-secondary" onClick={()=>jumpTo('Complete each pass approval')}>Continue gate approvals</button>}{step[0]==='Approve the gate pass'&&<button className="beginner-secondary" onClick={()=>jumpTo('Complete each pass approval')}>Next approval</button>}{step[0]==='Continue with the next stage'&&<button className="beginner-secondary" onClick={()=>jumpTo('Open the order for the current stage')}>Repeat stage</button>}<button className="beginner-next" onClick={courseFinished||index===steps.length-1?onClose:onNext}>{courseFinished||index===steps.length-1?'Finish':'Next step'}<ArrowRight size={15}/></button></footer></section>
   </div>;
 }
