@@ -101,7 +101,12 @@ class CuttingService:
         self.repo.insert('cutting_plan_versions',{'cutting_plan_id':plan['id'],'version_number':plan['version'],
             'production_order_id':plan['inputs'].get('production_order_id'),'proposal_id':plan['inputs'].get('proposal_id'),
             'changed_by':self.actor['id'],'event':event,'snapshot':copy.deepcopy(plan)})
-        self.repo.activity(self.actor,event,job=plan['inputs'].get('production_order_id'),proposal=plan['inputs'].get('proposal_id'),details={'cutting_plan_id':plan['id'],'version':plan['version'],'status':plan['status']})
+        job=plan['inputs'].get('production_order_id')
+        proposal=plan['inputs'].get('proposal_id')
+        # Workflow activity requires either a production order or proposal link.
+        # Standalone plans are already audited in cutting_plan_versions.
+        if job or proposal:
+            self.repo.activity(self.actor,event,job=job,proposal=proposal,details={'cutting_plan_id':plan['id'],'version':plan['version'],'status':plan['status']})
 
     def sync_task(self,plan):
         job=plan['inputs'].get('production_order_id')
@@ -130,13 +135,51 @@ class CuttingService:
                'verify':(REVIEWERS,{'Executed'})}
         roles,states=rules[action];role(self.actor,roles);require(plan['status'] in states,'Invalid cutting workflow transition.')
         inp=CuttingInput.model_validate(plan['inputs'])
+        if action=='start' and not inp.machine_id:
+            cutters=[machine for machine in m['machines']
+                     if any(word in machine.get('type','').lower() for word in ['laser','cutter','cutting'])]
+            require(cutters,'No cutting machine is registered. Register a cutter in Manufacturing → Production → Factory floor before starting this plan.')
+            available_status=[]
+            for machine in cutters:
+                status=str(machine.get('status') or '').strip().lower()
+                if status in {'running','busy','maintenance','unavailable','offline'}: continue
+                available_status.append(machine)
+            require(available_status,'No cutting machine is marked available. In the machine register, mark a physically idle cutter as Idle.')
+            available=[]
+            for machine in available_status:
+                c=inp.constraints
+                if any(sheet.w>min(c.machine_w,float(machine.get('machine_w') or c.machine_w))
+                       or sheet.h>min(c.machine_h,float(machine.get('machine_h') or c.machine_h))
+                       or sheet.thickness>min(c.machine_thickness,float(machine.get('machine_thickness') or c.machine_thickness))
+                       for sheet in inp.sheets): continue
+                available.append(machine)
+            if not available:
+                required_w=max(sheet.w for sheet in inp.sheets);required_h=max(sheet.h for sheet in inp.sheets)
+                required_t=max(sheet.thickness for sheet in inp.sheets)
+                capacities=', '.join(f"{machine.get('name') or machine['id']}: {machine.get('machine_w') or inp.constraints.machine_w:g} × {machine.get('machine_h') or inp.constraints.machine_h:g} mm, {machine.get('machine_thickness') or inp.constraints.machine_thickness:g} mm thick" for machine in available_status)
+                require(False,f'Plan needs a cutter for {required_w:g} × {required_h:g} mm sheets, {required_t:g} mm thick. Available cutter capacities: {capacities}.')
+            inp.machine_id=available[0]['id']
         if action in {'submit','approve','start'}:
             inp=self.resolve(inp,pid)
             result=validate(inp,[Placement.model_validate(p) for p in plan['layout']['placements']],plan['layout']['mode'])
             require(result['valid'] and result['feasible'],'Every required part must have a valid placement before release.')
             require(not inp.proposal_id,'Feasibility layouts cannot be released for production.')
             require(all(s['sheet']['inventory_id'] for s in result['sheets']),'Planning sheets must be replaced with actual inventory before release.')
-            require(inp.model_dump()==plan['inputs'],'Inventory or machine specification changed; revise this draft.')
+            if action=='submit':
+                # Refresh the saved snapshot from current inventory/machine data and
+                # keep the existing placements only when they remain feasible.
+                plan['inputs']=inp.model_dump(mode='json')
+                plan['layout']=result
+                original=plan.get('original_layout',{}).get('placements',[])
+                comparison=validate(inp,[Placement.model_validate(p) for p in original],plan['layout']['mode']) if original else result
+                plan['original_layout']=comparison if comparison['valid'] else result
+            elif action=='approve':
+                require(inp.model_dump(mode='json')==plan['inputs'],'Inventory or machine specifications changed after submission. Return the plan for revision before continuing.')
+            elif action=='start':
+                machine=next(x for x in m['machines'] if x['id']==inp.machine_id)
+                require(str(machine.get('status') or '').strip().lower() not in {'running','busy','maintenance','unavailable','offline'},'The selected cutting machine is not available. Free it or choose another machine.')
+                plan['inputs']=inp.model_dump(mode='json')
+                plan['layout']=result
         stock_ids={s['sheet']['inventory_id'] for s in plan['layout']['sheets']}
         sheets=[s for s in m['sheets'] if s['id'] in stock_ids]
         if action=='submit':

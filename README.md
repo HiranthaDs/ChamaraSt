@@ -62,7 +62,7 @@ Environment placeholders are in [`.env.example`](.env.example) and [`backend/.en
 
 ## Demo behavior
 
-Manufacturing extends the existing application with a factory dashboard, material and offcut registers, BOM calculator, procurement, cutting optimizer, production board, scheduling, machine maintenance, quality approvals, warehouse bins, serial passports and QR labels, shop orders, dispatch, and cost reports. Use **Guided walkthrough** on the factory dashboard to explore the workflow. The demo role selector changes the acting employee; approvals require a different employee where indicated.
+Manufacturing extends the existing application with a factory dashboard, material and offcut registers, BOM calculator, procurement, cutting optimizer, production board, scheduling, machine maintenance, quality approvals, warehouse bins, serial passports and QR labels, shop orders, dispatch, and cost reports. Use **Guided walkthrough** on the factory dashboard for the in-app sequence, or follow the detailed [start-to-delivery manufacturing guide](docs/manufacturing-start-to-delivery.md). The demo role selector changes the acting employee; approvals require a different employee where indicated.
 
 Cutting uses a deterministic rectangular guillotine heuristic with rotation, grain, margin, kerf, and offcut rules. Saving a preview does not consume stock. Approved execution and confirmed actuals post stock changes once. Production moves through approval gates and QC before finished goods become available. Dispatched orders create LKR invoices in the existing Finance screen; recorded payments appear in manufacturing cost events. Existing HR records supply attendance and workforce assignments.
 

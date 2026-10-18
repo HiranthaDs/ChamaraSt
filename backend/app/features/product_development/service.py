@@ -87,6 +87,25 @@ class ProposalService:
         require(target in PROPOSAL_COLUMNS,'Unknown proposal stage.',422)
         if target==row['status']: return self.detail(proposal_id)
         require(row['status'] not in {'Launched','Rejected / Archived'},'Create a new revision to reopen this proposal.')
+        if body.fast_track:
+            role(self.actor,{'Factory Manager'})
+            require(target=='Awaiting Final Approval','Fast-track can only move a proposal to final approval.')
+            require(row['status'] not in {'Approved for Production','Launched','Rejected / Archived'},'This proposal cannot be fast-tracked from its current stage.')
+            require(len(body.reason.strip())>=10,'Explain why this proposal is being fast-tracked (at least 10 characters).',422)
+            specs=self.repo.current_version(row)['specifications']
+            require(specs['description'].strip() and specs['business_justification'].strip(),
+                'Add the product description and business justification before fast-tracking.')
+            require(specs['feasibility']=='FEASIBLE','Mark feasibility as FEASIBLE before fast-tracking.')
+            require(specs['bom'] and specs['quality_criteria'].strip(),'Add the BOM and quality criteria before fast-tracking.')
+            version=self.repo.current_version(row)
+            require(self.repo.one('select id from public.product_proposal_cost_estimates where version_id=%s limit 1',(version['id'],)),
+                'Add a cost estimate for this revision before fast-tracking.')
+            previous=row['status']
+            self.repo.update('product_proposals','id',proposal_id,{'status':target,'version':row['version']+1,'updated_at':now()})
+            self.repo.activity(self.actor,'Proposal fast-tracked to final approval',proposal=proposal_id,
+                details={'from':previous,'to':target,'reason':body.reason.strip(),'revision':version['version_number'],'fast_track':True})
+            self.repo.notify(self.actor,row['reviewer_id'],'Proposal fast-tracked to final approval: '+row['title'],'product_proposal',proposal_id)
+            return self.detail(proposal_id)
         if target=='Submitted': require(row['status']=='Ideas' and (row['proposed_by']==self.actor['id'] or self.actor['role'] in PLANNERS),'Only a draft can be submitted by its owner.')
         else: role(self.actor,PLANNERS)
         if target=='Rejected / Archived': require(body.reason,'Record an archive reason.',422)
@@ -105,11 +124,26 @@ class ProposalService:
         self.repo.notify(self.actor,row['reviewer_id'],'Proposal stage: '+target,'product_proposal',proposal_id)
         return self.detail(proposal_id)
 
+    def is_fast_tracked(self,row):
+        version=self.repo.current_version(row)
+        return self.repo.one("""select id from public.production_workflow_activity
+            where proposal_id=%s and action='Proposal fast-tracked to final approval'
+              and details->>'revision'=%s order by created_at desc limit 1""",(row['id'],str(version['version_number']))) is not None
+
     def validate_launch_reviews(self,row,final=True):
         approvals=self.approvals(row)
+        version=self.repo.current_version(row)
+        specs=version['specifications']
+        if self.is_fast_tracked(row):
+            require(specs['feasibility']=='FEASIBLE','Feasibility changes must be resolved.')
+            require(specs['bom'] and specs['quality_criteria'].strip(),'The fast-tracked revision must have a BOM and quality criteria.')
+            require(self.repo.one('select id from public.product_proposal_cost_estimates where version_id=%s limit 1',(version['id'],)),
+                'A cost estimate is required for this fast-tracked revision.')
+            if final:
+                require(approvals.get('Final')=='Approved','Independent final approval is required.')
+            return
         required=['Technical','Materials','Cost','Prototype','Quality']+(['Final'] if final else [])
         require(all(approvals.get(s)=='Approved' for s in required),'Current revision requires approved '+', '.join(required)+' reviews.')
-        version=self.repo.current_version(row)
         prototypes=self.repo.all('select * from public.product_proposal_prototypes where version_id=%s',(version['id'],))
         passed=False
         for proto in prototypes:
@@ -132,7 +166,8 @@ class ProposalService:
             passed=self.repo.one("select p.id from public.product_proposal_prototypes p where p.version_id=%s and (select t.result from public.product_prototype_tests t where t.prototype_id=p.id order by t.created_at desc limit 1)='Pass'",(version['id'],))
             require(passed,'Record a passing prototype test for this revision first.')
         if body.review_stage=='Final' and body.decision=='Approved':
-            require(row['status']=='Awaiting Final Approval','Submit for final approval first.'); self.validate_launch_reviews(row,False)
+            require(row['status']=='Awaiting Final Approval','Submit for final approval first.')
+            self.validate_launch_reviews(row,False)
         self.repo.insert('product_proposal_reviews',dict(id=ident('REVIEW'),proposal_id=proposal_id,version_id=version['id'],review_stage=body.review_stage,
             reviewer_id=self.actor['id'],decision=body.decision,comments=body.comments))
         status=row['status']

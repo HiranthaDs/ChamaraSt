@@ -105,6 +105,12 @@ export function transition(original, action, p={}) {
     journal(m,batch,'Raw material receipt','Raw materials','Accounts payable',p.count*p.cost);
   } else if(action==='sheet-status'){
     allow(m,['Inventory Officer','Supervisor']);const s=get('sheets',p.id);check(['Available','Quarantined','Scrap'].includes(s.status),'Reserved or used sheets cannot be adjusted.');check(['Available','Quarantined','Scrap'].includes(p.status)&&p.reason?.trim(),'A valid disposition and reason are required.');s.status=p.status;s.note=p.reason;
+  } else if(action==='sheet-delete'){
+    allow(m,['Inventory Officer','Factory Manager']);const s=get('sheets',p.id);check(s.status==='Available','Only available sheets can be deleted. Reserved, used, quarantined, and scrapped sheets must remain traceable.');check(!m.cuts.some(c=>c.sheetId===s.id),'This sheet is linked to a cutting record and cannot be deleted.');m.sheets=m.sheets.filter(x=>x.id!==s.id);
+  } else if(action==='sheets-delete'){
+    allow(m,['Inventory Officer','Factory Manager']);check(Array.isArray(p.ids)&&p.ids.length>0&&new Set(p.ids).size===p.ids.length,'Select at least one sheet to delete.');const selected=p.ids.map(id=>get('sheets',id));check(selected.every(s=>s.status==='Available'&&!m.cuts.some(c=>c.sheetId===s.id)),'Only available sheets with no cutting history can be deleted.');m.sheets=m.sheets.filter(s=>!p.ids.includes(s.id));
+  } else if(action==='material-delete'){
+    allow(m,['Inventory Officer','Factory Manager']);const mat=get('materials',p.id);check(mat.onHand===0&&mat.reserved===0,'Material must have zero on-hand and reserved stock before it can be deleted.');check(!m.products.some(product=>product.bom?.some(line=>line.materialId===mat.id))&&!m.jobs.some(job=>job.bom?.some(line=>line.materialId===mat.id)),'This material is referenced by a product or production order and cannot be deleted.');check(!m.purchases.some(purchase=>purchase.materialId===mat.id),'This material has purchase history and cannot be deleted.');m.materials=m.materials.filter(x=>x.id!==mat.id);
   } else if(action==='purchase-create'){
     allow(m,['Procurement Officer','Inventory Officer']);const mat=get('materials',p.materialId);check(positive(p.quantity)&&Number.isInteger(p.quantity),'Enter a positive quantity in the inventory base unit.');const pr={...p,id:uid('PRQ'),status:'Pending',requester:actor,cost:mat.cost*p.quantity,supplier:mat.supplier,created:now()};m.purchases.unshift(pr);reference=pr.id;
   } else if(action==='purchase-approve'){
@@ -165,14 +171,14 @@ export function transition(original, action, p={}) {
   } else if(action==='maintenance-resolve'){
     allow(m,['Supervisor']);const ticket=get('maintenance',p.id);check(ticket.status==='Open','Ticket already closed.');ticket.status='Closed';if(!m.maintenance.some(t=>t.machineId===ticket.machineId&&t.status==='Open'))get('machines',ticket.machineId).status='Idle';
   } else if(action==='machine-release'){
-    allow(m,['Supervisor']);const machine=get('machines',p.id);check(!m.maintenance.some(t=>t.machineId===p.id&&t.status==='Open'),'Close all maintenance tickets first.');machine.status='Idle';
+    allow(m,['Supervisor']);const machine=get('machines',p.id);check(!m.maintenance.some(t=>t.machineId===p.id&&t.status==='Open'),'Close all maintenance tickets first.');check(!m.jobs.some(j=>j.machine===p.id&&['Running','Awaiting approval'].includes(j.status)),'This machine still has an active production job.');check(!m.cuts.some(c=>c.inputs?.machine_id===p.id&&c.status==='Cutting'),'This machine still has an active cutting plan.');machine.status='Idle';
   } else if(action==='schedule'){
     allow(m,['Production Planner']);const j=get('jobs',p.id);check(p.start&&p.due>=p.start,'Select a valid date range.');check(!['Completed','Running'].includes(j.status),'Pause active work before rescheduling.');j.start=p.start;j.due=p.due;j.priority=p.priority;
   } else if(action==='alert-update'){
     m.alerts[p.id]={...m.alerts[p.id],...p.changes};
   } else if(action==='labor-update'){
     allow(m,['HR Manager']);check(data.employees.some(e=>e.id===p.employeeId),'Unknown HR employee.');check(whole(p.rate)&&p.rate>0&&p.certification?.trim(),'Enter a valid hourly rate and skill.');m.labor[p.employeeId]={rate:p.rate,certification:p.certification,expires:p.expires,shift:p.shift,approved:true};
-  } else if(action==='demo-step') {m.demoStep=Math.max(0,Math.min(9,p.step));return data;
+  } else if(action==='demo-step') {m.demoStep=Math.max(0,Math.min(12,p.step));return data;
   } else throw Error('Unknown manufacturing action.');
   m.audit.unshift({id:uid('AUD'),at:now(),actor,role:m.actor.role,action,reference});
   return data;

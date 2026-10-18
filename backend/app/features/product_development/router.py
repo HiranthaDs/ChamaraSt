@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 from backend.app.db.postgres import get_connection
 from backend.app.features.production_jobs.router import actor_context, attachment_response
-from backend.app.features.production_jobs.models import Action, Note, DocumentInput
+from backend.app.features.production_jobs.models import Note, DocumentInput
 from backend.app.features.production_jobs.service import JobService
-from .models import ProposalInput, ProposalEdit, ReviewInput, EstimateInput, PrototypeInput, PrototypeTest, ConversionInput
+from .models import ProposalInput, ProposalEdit, ProposalStatusAction, ReviewInput, EstimateInput, PrototypeInput, PrototypeTest, ConversionInput
 from .repository import ProposalRepository
 from .service import ProposalService
 
@@ -20,7 +20,7 @@ def detail(proposal_id:str,svc=Depends(service)): return svc.detail(proposal_id)
 @router.put('/{proposal_id}')
 def revise(proposal_id:str,body:ProposalEdit,svc=Depends(service)): return svc.save(body,proposal_id)
 @router.post('/{proposal_id}/status')
-def status(proposal_id:str,body:Action,svc=Depends(service)): return svc.status(proposal_id,body)
+def status(proposal_id:str,body:ProposalStatusAction,svc=Depends(service)): return svc.status(proposal_id,body)
 @router.post('/{proposal_id}/reviews')
 def review(proposal_id:str,body:ReviewInput,svc=Depends(service)): return svc.review(proposal_id,body)
 @router.post('/{proposal_id}/estimates')

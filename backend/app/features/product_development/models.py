@@ -3,6 +3,11 @@ from typing import Literal
 from pydantic import Field
 from backend.app.features.production_jobs.models import Input, Priority, VersionInput
 
+class ProposalStatusAction(VersionInput):
+    status: str = Field(min_length=1,max_length=50)
+    reason: str = Field(default='',max_length=4000)
+    fast_track: bool = False
+
 class BOMLine(Input):
     materialId: str
     amount: float = Field(gt=0,le=1000000)

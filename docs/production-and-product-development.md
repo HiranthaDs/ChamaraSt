@@ -55,6 +55,8 @@ Board/list views support search, status, priority/date sorting and personal assi
 7. Independent Prototype and Quality reviews allow submission for final approval. Factory Manager approves launch. Proposal authors and revision authors cannot approve their own work.
 8. Factory Manager converts the approved revision, choosing an approved estimate and a new SKU or explicitly linking an existing equivalent product. Duplicate SKU/name detection and repeat-request handling prevent duplicate products. The existing product master receives the approved BOM, manufacturing route, quality criteria and cost settings. Conversion does not start unrestricted production or add inventory.
 
+For established parts, a **Factory Manager** can use **Change stage → Fast-track to final approval (skip stages)**. Enter a reason of at least 10 characters. The current revision must have a description, business justification, `FEASIBLE` assessment, BOM, quality criteria, and cost estimate. A different Factory Manager must still record the independent Final approval, and conversion must use that revision's estimate. Fast-tracking skips the intermediate stage/review sequence and prototype requirement; the reason and revision are retained in proposal activity. Use the standard route for new or technically uncertain designs.
+
 Engineering revisions retain original documents/reviews/prototype links. Released manufacturing orders retain their material reservations and captured specifications; product conversion cannot silently change them. This installation uses its existing seven-stage manufacturing route. Adding a different machine route requires extending the manufacturing execution workflow, rather than changing proposal text alone.
 
 ## API and code structure
